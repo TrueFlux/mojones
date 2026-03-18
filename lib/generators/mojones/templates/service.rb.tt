@@ -1,0 +1,10 @@
+# frozen_string_literal: true
+
+class <%= class_name %> < Mojones::Base
+  include Dry::Monads[:result]
+
+  def call
+    # TODO: implement service logic
+    Success(:ok)
+  end
+end

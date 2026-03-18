@@ -1,0 +1,98 @@
+# frozen_string_literal: true
+
+require "logger"
+
+module Mojones
+  class Matcher
+    class Match
+      attr_reader :matched, :result
+
+      def initialize(matched:, result:)
+        @matched = matched
+        @result = result
+      end
+
+      class Success < self; end
+      class Failure < self; end
+    end
+
+    def initialize(service_result, service)
+      @service = service
+      @service_result = service_result
+      @matches = []
+      yield(self) if block_given?
+    end
+
+    def result
+      return @service_result.no_matches! if @matches.empty?
+
+      @matches.last.result.tap do |chosen|
+        if @matches.size > 1
+          logger.debug <<~WARNING
+            #{service.name} matched multiple handlers; returning last result (#{chosen})
+          WARNING
+        end
+      end
+    end
+
+    def success(*match_values, &block)
+      return unless @service_result.success?
+
+      value = @service_result.original
+
+      return unless match_values.empty? || match_values.any? { _1 === value } # rubocop:disable Style/CaseEquality
+
+      @matches << Match::Success.new(
+        matched: value,
+        result: block.call(value)
+      )
+    end
+
+    def failure(*match_errors, &block)
+      return unless @service_result.failure?
+
+      error = @service_result.original
+
+      return unless match_errors.empty? || match_errors.any? { _1 === error } # rubocop:disable Style/CaseEquality
+
+      translated = translate_error(error)
+
+      @matches << Match::Failure.new(
+        matched: error,
+        result: block.arity == 2 ? block.call(error, translated) : block.call(translated)
+      )
+    end
+
+    private
+
+    attr_reader :service
+
+    def logger
+      @logger ||= defined?(Rails) ? Rails.logger : Logger.new($stdout)
+    end
+
+    def service_name_lookup
+      @service_name_lookup ||= service.name.gsub("::", ".").underscore
+    end
+
+    def translate_error(error)
+      return error.to_s unless defined?(I18n)
+
+      key =
+        case error
+        when Symbol
+          error
+        when StandardError
+          error.class.name.gsub("::", ".").underscore
+        end
+
+      default =
+        case error
+        when Symbol then error.to_s.humanize
+        when StandardError then error.message
+        end
+
+      I18n.t("#{service_name_lookup}.#{key}", default: default)
+    end
+  end
+end
