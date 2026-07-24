@@ -98,7 +98,7 @@ CI (`.github/workflows/`) runs both on every push and pull request.
 
 ## License
 
-MIT.
+MIT — see `LICENSE.txt`.
 
 ---
 
