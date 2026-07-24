@@ -10,7 +10,7 @@ Gem::Specification.new do |s|
   s.authors     = ["Phil Brockwell", "Habib Alamin"]
   s.email       = ["phil@trueflux.agency", "habib@trueflux.agency"]
   s.files       = Dir["lib/**/*.rb"]
-  s.homepage    = "https://trueflux.agency"
+  s.homepage    = "https://github.com/TrueFlux/mojones"
   s.license     = "MIT"
   s.required_ruby_version = ">= 3.2"
 
