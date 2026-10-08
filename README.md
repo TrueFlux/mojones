@@ -40,11 +40,11 @@ class CreateUser < Mojones::Base
 end
 ```
 
-Calling `.call` without a block just gives you the raw value — a `User` on
-success, or whatever you passed to `Failure(...)` if it failed:
+Calling `.call` without a block gives you the `Result` itself:
 
 ```ruby
-CreateUser.call(params) # => #<User ...> or the failure value
+result = CreateUser.call(params) # => Success(#<User ...>) or Failure(#<ActiveModel::Errors ...>)
+result.value!                    # => #<User ...>, or raises on failure
 ```
 
 Pass a block to match on the outcome instead:
@@ -71,11 +71,34 @@ If more than one handler matches, the **last** match wins (and a warning
 is logged) — this mirrors `case`/`when` fallthrough rather than raising,
 so ordering handlers from more to less specific is up to you.
 
-If a service's `#call` raises instead of returning a `Result`, or returns
-something that isn't a `Dry::Monads::Result` at all, `Mojones::Base` turns
-that into a matchable failure too (or re-raises, if nothing calls `.value!`
-on it) rather than letting it escape silently as a bare exception or a
-malformed result.
+If the service raises, the exception is matchable as a failure, so
+`m.failure(ActiveRecord::RecordNotFound) { ... }` works. Without a block,
+or when no handler matches, the exception is re-raised.
+
+If `#call` returns something that isn't a `Dry::Monads::Result`, `.call`
+raises `Mojones::Base::Errors::ServiceReturnedNonResult`. That's a bug in
+the service, so it can't be matched.
+
+### Failure values and I18n
+
+A one-argument `failure` block gets the failure value translated:
+
+- A Symbol is looked up under the service's I18n scope, so
+  `Failure(:card_declined)` in `Billing::ChargeCard` is looked up as
+  `billing.charge_card.card_declined`. If there's no translation, it falls
+  back to `"Card declined"`.
+- An exception is looked up by its class name, falling back to its message.
+- Any other value (for example `user.errors`) is passed through unchanged.
+
+Translation needs I18n and ActiveSupport, so in practice it means Rails.
+Without them, Symbols and exceptions arrive as `to_s` strings. Anonymous
+classes are never translated.
+
+To get the untranslated value as well, take two arguments:
+
+```ruby
+m.failure { |error, message| flash[:alert] = message }
+```
 
 ### Rails generator
 
