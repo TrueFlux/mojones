@@ -12,7 +12,7 @@ Gem::Specification.new do |s|
   s.files       = Dir["lib/**/*", "README.md", "LICENSE.txt"]
   s.homepage    = "https://github.com/TrueFlux/mojones"
   s.license     = "MIT"
-  s.required_ruby_version = ">= 3.2"
+  s.required_ruby_version = ">= 3.3"
 
   s.add_dependency "dry-monads", "~> 1.3"
   s.metadata["rubygems_mfa_required"] = "true"
