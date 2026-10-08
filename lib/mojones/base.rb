@@ -7,22 +7,13 @@ module Mojones
     module Errors
       class NoHandlerMatched < StandardError
         def initialize(value)
-          super
-          @value = value
+          super("No handler matched for #{value.inspect}")
         end
-
-        def message = "No handler matched for #{@value.inspect}"
       end
 
       class ServiceReturnedNonResult < StandardError
         def initialize(service, value)
-          super(value)
-          @service_name = service.class.inspect.sub(/^Mojones::/, "")
-          @value = value
-        end
-
-        def message
-          "Service #{@service_name} returned non-Result value (#{@value.inspect} : #{@value.class})"
+          super("Service #{service.name} returned non-Result value (#{value.inspect} : #{value.class})")
         end
       end
     end
@@ -85,12 +76,11 @@ module Mojones
     # non-Result is a bug in the service, so it raises instead (an exception
     # raised in `else` isn't caught by the method's `rescue`).
     def self.execute(*, **)
-      service = new(*, **)
-      value = service.call
+      value = new(*, **).call
     rescue StandardError => e
       RaisedError.new(e)
     else
-      raise Errors::ServiceReturnedNonResult.new(service, value) unless value.is_a?(Dry::Monads::Result)
+      raise Errors::ServiceReturnedNonResult.new(self, value) unless value.is_a?(Dry::Monads::Result)
 
       ReturnedValue.new(value)
     end
