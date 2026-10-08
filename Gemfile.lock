@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    mojones (0.1.0)
+    mojones (0.2.0)
       dry-monads (~> 1.3)
 
 GEM
