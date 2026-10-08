@@ -54,20 +54,22 @@ CreateUser.call(params) do |m|
 end
 ```
 
-`success`/`failure` can also filter on the matched value/error, letting you
-handle specific cases before falling through to a catch-all:
+`success` and `failure` can also filter on the value or error, using `===`
+(so classes, ranges, regexps and literal values all work):
 
 ```ruby
-ChargeCard.call(order) do |m|
-  m.failure(CardDeclined) { |_| redirect_to retry_payment_path }
-  m.failure { |error| raise error }
-  m.success { |charge| redirect_to receipt_path(charge) }
+notice = ChargeCard.call(order) do |m|
+  m.success { |charge| "Charged #{charge.amount}" }
+  m.failure { |_error, message| message }
+  m.failure(CardDeclined) { |_| "Your card was declined" }
 end
 ```
 
-If more than one handler matches, the **last** match wins (and a warning
-is logged) — this mirrors `case`/`when` fallthrough rather than raising,
-so ordering handlers from more to less specific is up to you.
+Every handler that matches runs, and the result of the **last** one is
+returned. So put catch-alls first and more specific handlers after them.
+That's the opposite of `case`/`when`. Because every match runs, keep side
+effects like `redirect_to` out of handlers that can overlap. Multiple
+matches are logged at debug level.
 
 If the service raises, the exception is matchable as a failure, so
 `m.failure(ActiveRecord::RecordNotFound) { ... }` works. Without a block,
