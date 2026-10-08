@@ -73,13 +73,14 @@ module Mojones
 
     def translate_error(error)
       return error unless error.is_a?(Symbol) || error.is_a?(StandardError)
-      return error.to_s unless translatable?
+      return error.to_s unless translatable?(error)
 
       I18n.t(error_key(error), default: error_default(error))
     end
 
-    def translatable?
-      defined?(I18n)
+    # Keys are built from class names, so anonymous classes can't be translated.
+    def translatable?(error)
+      defined?(I18n) && service.name && (error.is_a?(Symbol) || error.class.name)
     end
 
     def error_key(error)

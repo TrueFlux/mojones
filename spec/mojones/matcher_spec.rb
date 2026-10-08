@@ -47,6 +47,16 @@ describe Mojones::Matcher do
 
       expect(handle_failure(TranslatedService)).to be(errors)
     end
+
+    it "does not translate failures from anonymous services" do
+      expect(handle_failure(failure_service(:bad))).to eq("bad")
+    end
+
+    it "does not translate anonymous exception classes" do
+      stub_const("TranslatedService", failure_service(Class.new(StandardError).new("nope")))
+
+      expect(handle_failure(TranslatedService)).to eq("nope")
+    end
   end
 
   context "when I18n is not loaded" do
