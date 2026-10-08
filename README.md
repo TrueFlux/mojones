@@ -25,8 +25,6 @@ Inherit from `Mojones::Base` and return a `Dry::Monads::Result` from
 
 ```ruby
 class CreateUser < Mojones::Base
-  include Dry::Monads[:result]
-
   def initialize(params)
     @params = params
   end
