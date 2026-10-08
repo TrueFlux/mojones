@@ -80,7 +80,12 @@ module Mojones
 
     # Keys are built from class names, so anonymous classes can't be translated.
     def translatable?(error)
-      defined?(I18n) && service.name && (error.is_a?(Symbol) || error.class.name)
+      i18n_available? && service.name && (error.is_a?(Symbol) || error.class.name)
+    end
+
+    # Key building and defaults use ActiveSupport's inflector.
+    def i18n_available?
+      defined?(I18n) && defined?(ActiveSupport::Inflector)
     end
 
     def error_key(error)

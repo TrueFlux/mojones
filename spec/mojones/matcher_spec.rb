@@ -59,6 +59,18 @@ describe Mojones::Matcher do
     end
   end
 
+  context "when I18n is loaded without ActiveSupport" do
+    before do
+      hide_const("ActiveSupport::Inflector")
+    end
+
+    it "passes Symbol failures as strings" do
+      stub_const("TranslatedService", failure_service(:bad))
+
+      expect(handle_failure(TranslatedService)).to eq("bad")
+    end
+  end
+
   context "when I18n is not loaded" do
     before { hide_const("I18n") }
 
