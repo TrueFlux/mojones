@@ -4,30 +4,18 @@ require "logger"
 
 module Mojones
   class Matcher
-    class Match
-      attr_reader :matched, :result
-
-      def initialize(matched:, result:)
-        @matched = matched
-        @result = result
-      end
-
-      class Success < self; end
-      class Failure < self; end
-    end
-
     def initialize(service_result, service)
       @service = service
       @service_result = service_result
-      @matches = []
+      @results = []
       yield(self) if block_given?
     end
 
     def result
-      return @service_result.no_matches! if @matches.empty?
+      return @service_result.no_matches! if @results.empty?
 
-      @matches.last.result.tap do |chosen|
-        if @matches.size > 1
+      @results.last.tap do |chosen|
+        if @results.size > 1
           logger.debug <<~WARNING
             #{service.name} matched multiple handlers; returning last result (#{chosen})
           WARNING
@@ -35,37 +23,38 @@ module Mojones
       end
     end
 
-    def success(*match_values, &block)
+    def success(*patterns)
       return unless @service_result.success?
 
       value = @service_result.original
+      return unless matches?(patterns, value)
 
-      return unless match_values.empty? || match_values.any? { _1 === value } # rubocop:disable Style/CaseEquality
-
-      @matches << Match::Success.new(
-        matched: value,
-        result: block.call(value)
-      )
+      @results << yield(value)
     end
 
-    def failure(*match_errors, &block)
+    def failure(*patterns, &block)
       return unless @service_result.failure?
 
       error = @service_result.original
-
-      return unless match_errors.empty? || match_errors.any? { _1 === error } # rubocop:disable Style/CaseEquality
+      return unless matches?(patterns, error)
 
       translated = translate_error(error)
-
-      @matches << Match::Failure.new(
-        matched: error,
-        result: block.arity == 2 ? block.call(error, translated) : block.call(translated)
-      )
+      @results << (block.arity == 2 ? yield(error, translated) : yield(translated))
     end
 
     private
 
     attr_reader :service
+
+    # Matches like case/when, so classes, ranges, regexps and plain values all work.
+    def matches?(patterns, value)
+      return true if patterns.empty?
+
+      case value
+      when *patterns then true
+      else false
+      end
+    end
 
     def logger
       @logger ||= defined?(Rails) ? Rails.logger : Logger.new($stdout)
