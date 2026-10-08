@@ -9,7 +9,7 @@ Gem::Specification.new do |s|
   s.description = "A lightweight framework for Ruby service objects using Dry::Monads with enforced result types and matching."
   s.authors     = ["Phil Brockwell", "Habib Alamin"]
   s.email       = ["phil@trueflux.agency", "habib@trueflux.agency"]
-  s.files       = Dir["lib/**/*.rb"]
+  s.files       = Dir["lib/**/*", "README.md", "LICENSE.txt"]
   s.homepage    = "https://github.com/TrueFlux/mojones"
   s.license     = "MIT"
   s.required_ruby_version = ">= 3.2"
