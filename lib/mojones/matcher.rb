@@ -71,28 +71,28 @@ module Mojones
       @logger ||= defined?(Rails) ? Rails.logger : Logger.new($stdout)
     end
 
-    def service_name_lookup
-      @service_name_lookup ||= service.name.gsub("::", ".").underscore
+    def translate_error(error)
+      return error unless error.is_a?(Symbol) || error.is_a?(StandardError)
+      return error.to_s unless translatable?
+
+      I18n.t(error_key(error), default: error_default(error))
     end
 
-    def translate_error(error)
-      return error.to_s unless defined?(I18n)
+    def translatable?
+      defined?(I18n)
+    end
 
-      key =
-        case error
-        when Symbol
-          error
-        when StandardError
-          error.class.name.gsub("::", ".").underscore
-        end
+    def error_key(error)
+      key = error.is_a?(Symbol) ? error : i18n_path(error.class.name)
+      "#{i18n_path(service.name)}.#{key}"
+    end
 
-      default =
-        case error
-        when Symbol then error.to_s.humanize
-        when StandardError then error.message
-        end
+    def error_default(error)
+      error.is_a?(Symbol) ? ActiveSupport::Inflector.humanize(error) : error.message
+    end
 
-      I18n.t("#{service_name_lookup}.#{key}", default: default)
+    def i18n_path(name)
+      ActiveSupport::Inflector.underscore(name.gsub("::", "."))
     end
   end
 end

@@ -91,6 +91,7 @@ describe Mojones::Base do
 
   context "when using matcher with failure" do
     before do
+      hide_const("I18n")
       stub_const("MatchFailureService", Class.new(Mojones::Base) do
         def call
           Failure(:bad)
