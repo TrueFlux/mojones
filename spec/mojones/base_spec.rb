@@ -195,9 +195,9 @@ describe Mojones::Base do
 
     it "only runs handlers whose patterns match with ===" do
       value = FilterService.call do |m|
-        m.failure { |_| "catch-all" }
-        m.failure(:expired, :declined) { |_| "declined" }
         m.failure(:other) { |_| "other" }
+        m.failure(:expired, :declined) { |_| "declined" }
+        m.failure { |_| "catch-all" }
       end
 
       expect(value).to eq("declined")
@@ -223,22 +223,33 @@ describe Mojones::Base do
       end)
     end
 
-    it "returns the last match" do
+    it "returns the first match" do
       value = MultiMatchService.call do |m|
         m.success { |_| "first" }
         m.success { |_| "second" }
       end
 
-      expect(value).to eq("second")
+      expect(value).to eq("first")
     end
 
-    it "does not write the debug log to stdout outside Rails" do
-      expect do
-        MultiMatchService.call do |m|
-          m.success { |_| "first" }
-          m.success { |_| "second" }
-        end
-      end.not_to output.to_stdout
+    it "does not run later matching handlers" do
+      ran = []
+
+      MultiMatchService.call do |m|
+        m.success { |_| ran << :first }
+        m.success { |_| ran << :second }
+      end
+
+      expect(ran).to eq([:first])
+    end
+
+    it "returns a falsy first match rather than raising NoHandlerMatched" do
+      value = MultiMatchService.call do |m|
+        m.success { |_| nil }
+        m.success { |_| "second" }
+      end
+
+      expect(value).to be_nil
     end
   end
 end

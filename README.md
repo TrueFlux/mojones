@@ -60,16 +60,15 @@ end
 ```ruby
 notice = ChargeCard.call(order) do |m|
   m.success { |charge| "Charged #{charge.amount}" }
-  m.failure { |_error, message| message }
   m.failure(CardDeclined) { |_| "Your card was declined" }
+  m.failure { |_error, message| message }
 end
 ```
 
-Every handler that matches runs, and the result of the **last** one is
-returned. So put catch-alls first and more specific handlers after them.
-That's the opposite of `case`/`when`. Because every match runs, keep side
-effects like `redirect_to` out of handlers that can overlap. Multiple
-matches are logged at debug level.
+Handlers are tried in order and the **first** match wins, like
+`case`/`when`. Later handlers don't run at all, so put specific handlers
+before catch-alls, and side effects like `redirect_to` only ever happen
+once.
 
 If the service raises, the exception is matchable as a failure, so
 `m.failure(ActiveRecord::RecordNotFound) { ... }` works. Without a block,

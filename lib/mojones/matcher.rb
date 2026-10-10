@@ -1,50 +1,49 @@
 # frozen_string_literal: true
 
-require "logger"
-
 module Mojones
   class Matcher
     def initialize(service_result, service)
       @service = service
       @service_result = service_result
-      @results = []
+      @matched = false
       yield(self) if block_given?
     end
 
     def result
-      return @service_result.no_matches! if @results.empty?
+      return @service_result.no_matches! unless @matched
 
-      @results.last.tap do |chosen|
-        if @results.size > 1
-          logger.debug <<~WARNING
-            #{service.name} matched multiple handlers; returning last result (#{chosen})
-          WARNING
-        end
-      end
+      @result
     end
 
+    # Handlers are tried in order and the first match wins, like case/when.
+    # Later handlers are skipped entirely, so their side effects never run.
     def success(*patterns)
-      return unless @service_result.success?
+      return if @matched || !@service_result.success?
 
       value = @service_result.original
       return unless matches?(patterns, value)
 
-      @results << yield(value)
+      match(yield(value))
     end
 
     def failure(*patterns, &block)
-      return unless @service_result.failure?
+      return if @matched || !@service_result.failure?
 
       error = @service_result.original
       return unless matches?(patterns, error)
 
       translated = translate_error(error)
-      @results << (block.arity == 2 ? yield(error, translated) : yield(translated))
+      match(block.arity == 2 ? yield(error, translated) : yield(translated))
     end
 
     private
 
     attr_reader :service
+
+    def match(result)
+      @matched = true
+      @result = result
+    end
 
     # Matches like case/when, so classes, ranges, regexps and plain values all work.
     def matches?(patterns, value)
@@ -54,10 +53,6 @@ module Mojones
       when *patterns then true
       else false
       end
-    end
-
-    def logger
-      @logger ||= defined?(Rails) ? Rails.logger : Logger.new($stderr, level: Logger::INFO)
     end
 
     def translate_error(error)
