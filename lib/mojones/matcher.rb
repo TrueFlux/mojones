@@ -57,7 +57,7 @@ module Mojones
     end
 
     def logger
-      @logger ||= defined?(Rails) ? Rails.logger : Logger.new($stdout)
+      @logger ||= defined?(Rails) ? Rails.logger : Logger.new($stderr, level: Logger::INFO)
     end
 
     def translate_error(error)

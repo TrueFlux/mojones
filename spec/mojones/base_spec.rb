@@ -145,5 +145,14 @@ describe Mojones::Base do
 
       expect(value).to eq("second")
     end
+
+    it "does not write the debug log to stdout outside Rails" do
+      expect do
+        MultiMatchService.call do |m|
+          m.success { |_| "first" }
+          m.success { |_| "second" }
+        end
+      end.not_to output.to_stdout
+    end
   end
 end
